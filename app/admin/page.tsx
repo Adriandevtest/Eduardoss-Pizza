@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { 
@@ -10,26 +10,58 @@ import {
   Bike, CreditCard, User
 } from 'lucide-react';
 
+/* ===================== TYPES ===================== */
+
+interface Pizza {
+  _id: string;
+  name: string;
+  price: number;
+  description: string;
+  image: string;
+  category: string;
+}
+
+interface Usuario {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+/* ===================== COMPONENT ===================== */
+
 export default function AdminPage() {
   const { user, isLoggedIn } = useAuthStore();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState('pizzas'); 
-  const [pizzas, setPizzas] = useState([]);
-  const [usuarios, setUsuarios] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pizzas' | 'clientes' | 'colaboradores'>('pizzas'); 
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingPizza, setEditingPizza] = useState<any>(null);
+  const [pizzas, setPizzas] = useState<Pizza[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingPizza, setEditingPizza] = useState<Pizza | null>(null);
 
   const [pizzaForm, setPizzaForm] = useState({
-    name: '', price: '', description: '', image: '', category: 'clasica'
+    name: '',
+    price: '',
+    description: '',
+    image: '',
+    category: 'clasica'
   });
 
   const [colaboradorForm, setColaboradorForm] = useState({
-    name: '', email: '', password: '', role: 'cocina'
+    name: '',
+    email: '',
+    password: '',
+    role: 'cocina'
   });
+
+  /* ===================== AUTH ===================== */
 
   useEffect(() => {
     if (!isLoggedIn || user?.role !== 'admin') {
@@ -44,63 +76,92 @@ export default function AdminPage() {
     }
   }, [activeTab, isLoggedIn, user]);
 
-  const fetchPizzas = async () => {
+  /* ===================== FETCH ===================== */
+
+  const fetchPizzas = async (): Promise<void> => {
     try {
       const res = await fetch('/api/pizzas', { cache: 'no-store' });
       const data = await res.json();
-      if (Array.isArray(data)) setPizzas(data);
+      if (Array.isArray(data)) {
+        setPizzas(data);
+      } else {
+        setPizzas([]);
+      }
     } catch (error) {
       console.error("Error cargando pizzas:", error);
+      setPizzas([]);
     }
   };
 
-  const fetchUsuarios = async () => {
+  const fetchUsuarios = async (): Promise<void> => {
     setLoading(true);
     try {
       const res = await fetch('/api/users', { cache: 'no-store' });
       const data = await res.json();
-      if (Array.isArray(data)) setUsuarios(data);
+      if (Array.isArray(data)) {
+        setUsuarios(data);
+      } else {
+        setUsuarios([]);
+      }
     } catch (error) {
       console.error("Error cargando usuarios:", error);
+      setUsuarios([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+  /* ===================== IMAGE ===================== */
+
+  const handleImageUpload = (
+    e: ChangeEvent<HTMLInputElement>, 
+    isEdit: boolean = false
+  ): void => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        if (isEdit) {
-          setEditingPizza((prev: any) => ({ ...prev, image: base64String }));
-        } else {
-          setPizzaForm((prev) => ({ ...prev, image: base64String }));
-        }
-      };
-      reader.readAsDataURL(file); 
-    }
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      if (isEdit && editingPizza) {
+        setEditingPizza({ ...editingPizza, image: base64String });
+      } else {
+        setPizzaForm(prev => ({ ...prev, image: base64String }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleAddPizza = async (e: React.FormEvent) => {
+  /* ===================== PIZZAS ===================== */
+
+  const handleAddPizza = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
+
     if (!pizzaForm.image) {
       alert("Por favor, sube una imagen para la pizza.");
       return;
     }
-    
+
     setIsSaving(true);
     try {
       const res = await fetch('/api/pizzas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...pizzaForm, price: Number(pizzaForm.price) }),
+        body: JSON.stringify({ 
+          ...pizzaForm, 
+          price: Number(pizzaForm.price) 
+        }),
       });
 
       if (res.ok) {
-        setPizzaForm({ name: '', price: '', description: '', image: '', category: 'clasica' });
-        await fetchPizzas(); 
+        setPizzaForm({
+          name: '',
+          price: '',
+          description: '',
+          image: '',
+          category: 'clasica'
+        });
+        await fetchPizzas();
         alert("¡Pizza añadida correctamente al menú!");
       }
     } catch (error) {
@@ -110,29 +171,28 @@ export default function AdminPage() {
     }
   };
 
-  const openEditModal = (pizza: any) => {
+  const openEditModal = (pizza: Pizza): void => {
     setEditingPizza({ ...pizza });
     setIsEditModalOpen(true);
   };
 
-  const handleUpdatePizza = async (e: React.FormEvent) => {
+  const handleUpdatePizza = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
+    if (!editingPizza) return;
+
     setIsSaving(true);
     try {
       const res = await fetch(`/api/pizzas/${editingPizza._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          name: editingPizza.name,
-          price: Number(editingPizza.price),
-          description: editingPizza.description,
-          image: editingPizza.image, 
-          category: editingPizza.category
+          ...editingPizza,
+          price: Number(editingPizza.price)
         }),
       });
 
       if (res.ok) {
-        await fetchPizzas(); 
+        await fetchPizzas();
         setIsEditModalOpen(false);
         setEditingPizza(null);
         alert("¡Cambios guardados con éxito!");
@@ -146,8 +206,9 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeletePizza = async (id: string) => {
+  const handleDeletePizza = async (id: string): Promise<void> => {
     if (!confirm("¿Seguro que quieres eliminar esta pizza del menú de Tabasco?")) return;
+
     try {
       const res = await fetch(`/api/pizzas/${id}`, { method: 'DELETE' });
       if (res.ok) await fetchPizzas();
@@ -156,16 +217,20 @@ export default function AdminPage() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  /* ===================== ROLES ===================== */
+
+  const handleRoleChange = async (userId: string, newRole: string): Promise<void> => {
     if (!confirm(`¿Cambiar el rol de este usuario a ${newRole.toUpperCase()}?`)) return;
+
     try {
       const res = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       });
+
       if (res.ok) {
-        fetchUsuarios(); 
+        await fetchUsuarios();
       } else {
         alert("Error al actualizar el rol.");
       }
@@ -174,30 +239,22 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddColaborador = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(colaboradorForm),
-      });
+  /* ===================== FILTROS ===================== */
 
-      if (res.ok) {
-        setColaboradorForm({ name: '', email: '', password: '', role: 'cocina' });
-        fetchUsuarios();
-        alert("Personal registrado con éxito.");
-      } else {
-        const errorData = await res.json();
-        alert(errorData.error || "Error al registrar.");
-      }
-    } catch (error) {
-      console.error("Error registrando personal:", error);
-    } finally {
-      setIsSaving(false);
+  const clientes = usuarios.filter(u => u.role === 'cliente');
+  const colaboradores = usuarios.filter(u => u.role !== 'cliente');
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin': return <Shield size={16} />;
+      case 'cocina': return <ChefHat size={16} />;
+      case 'cajero': return <CreditCard size={16} />;
+      case 'repartidor': return <Bike size={16} />;
+      default: return <User size={16} />;
     }
   };
+
+  /* ===================== RENDER ===================== */
 
   if (!isLoggedIn || user?.role !== 'admin') {
     return (
@@ -206,19 +263,6 @@ export default function AdminPage() {
       </div>
     );
   }
-
-  const clientes = usuarios.filter(u => u.role === 'cliente');
-  const colaboradores = usuarios.filter(u => u.role !== 'cliente');
-
-  const getRoleIcon = (role: string) => {
-    switch(role) {
-      case 'admin': return <Shield size={16} className="text-purple-600" />;
-      case 'cocina': return <ChefHat size={16} className="text-orange-600" />;
-      case 'cajero': return <CreditCard size={16} className="text-blue-600" />;
-      case 'repartidor': return <Bike size={16} className="text-green-600" />;
-      default: return <User size={16} className="text-gray-500" />;
-    }
-  };
 
   return (
     <main className="max-w-6xl mx-auto p-6 lg:p-12">
