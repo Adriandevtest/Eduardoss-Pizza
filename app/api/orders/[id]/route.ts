@@ -1,40 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
-import Order from '@/models/Order';
+import Pizza from '@/models/Pizza';
 
-export async function PATCH(
+export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    // En Next 16 params es Promise
     const { id } = await context.params;
+    const body = await request.json();
 
-    const { status } = await request.json();
-
-    console.log("Actualizando pedido en Tabasco:", id);
-
-    const updatedOrder = await Order.findByIdAndUpdate(
+    const updatedPizza = await Pizza.findByIdAndUpdate(
       id,
-      { status },
+      body,
       { new: true }
     );
 
-    if (!updatedOrder) {
+    if (!updatedPizza) {
       return NextResponse.json(
-        { error: "Pedido no encontrado" },
+        { error: "Pizza no encontrada" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(updatedOrder);
+    return NextResponse.json(updatedPizza);
 
   } catch (error) {
-    console.error("Error en PATCH:", error);
+    console.error("Error en PUT:", error);
     return NextResponse.json(
-      { error: "Fallo en el servidor" },
+      { error: "Error al actualizar pizza" },
       { status: 500 }
     );
   }
