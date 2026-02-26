@@ -1,0 +1,32 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface User {
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface AuthState {
+  user: User | null;
+  isLoggedIn: boolean;
+  login: (userData: User) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isLoggedIn: false,
+      login: (userData) => set({ user: userData, isLoggedIn: true }),
+      logout: () => {
+        set({ user: null, isLoggedIn: false });
+        localStorage.removeItem('auth-storage'); // Limpia la sesión
+      },
+    }),
+    {
+      name: 'auth-storage', // Nombre de la cookie/localstorage
+    }
+  )
+);
