@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { 
   PlusCircle, Loader2, Trash2, Edit3, Users, 
   Pizza as PizzaIcon, Mail, Calendar, Upload, 
-  X, CheckCircle2, UserCog, Shield, ChefHat, 
+  X, CheckCircle2, UserPlus, UserCog, Shield, ChefHat, 
   Bike, CreditCard, User
 } from 'lucide-react';
 
@@ -239,6 +239,44 @@ export default function AdminPage() {
     }
   };
 
+  /* ===================== COLABORADORES ===================== */
+
+  const handleAddColaborador = async (e: FormEvent): Promise<void> => {
+    e.preventDefault();
+
+    if (!colaboradorForm.name || !colaboradorForm.email || !colaboradorForm.password) {
+      alert("Todos los campos son obligatorios.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(colaboradorForm),
+      });
+
+      if (res.ok) {
+        setColaboradorForm({
+          name: '',
+          email: '',
+          password: '',
+          role: 'cocina'
+        });
+
+        await fetchUsuarios();
+        alert("Colaborador registrado correctamente.");
+      } else {
+        alert("Error al registrar colaborador.");
+      }
+    } catch (error) {
+      console.error("Error creando colaborador:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
   /* ===================== FILTROS ===================== */
 
   const clientes = usuarios.filter(u => u.role === 'cliente');
@@ -509,6 +547,3 @@ export default function AdminPage() {
   );
 }
 
-function UserPlus(props: any) {
-  return <UserCog {...props} />;
-}
