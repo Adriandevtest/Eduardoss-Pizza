@@ -1,67 +1,35 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { 
   PlusCircle, Loader2, Trash2, Edit3, Users, 
-  Pizza as PizzaIcon, Mail, Calendar, Upload, 
-  X, CheckCircle2, UserPlus, UserCog, Shield, ChefHat, 
-  Bike, CreditCard, User
+  Pizza as PizzaIcon, Upload, X, CheckCircle2, 
+  UserCog, Shield, ChefHat, Bike, CreditCard, 
+  User, UserPlus 
 } from 'lucide-react';
-
-/* ===================== TYPES ===================== */
-
-interface Pizza {
-  _id: string;
-  name: string;
-  price: number;
-  description: string;
-  image: string;
-  category: string;
-}
-
-interface Usuario {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: string;
-}
-
-/* ===================== COMPONENT ===================== */
 
 export default function AdminPage() {
   const { user, isLoggedIn } = useAuthStore();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'pizzas' | 'clientes' | 'colaboradores'>('pizzas'); 
+  const [activeTab, setActiveTab] = useState('pizzas'); 
+  const [pizzas, setPizzas] = useState([]);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [pizzas, setPizzas] = useState<Pizza[]>([]);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-
-  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-  const [editingPizza, setEditingPizza] = useState<Pizza | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingPizza, setEditingPizza] = useState<any>(null);
 
   const [pizzaForm, setPizzaForm] = useState({
-    name: '',
-    price: '',
-    description: '',
-    image: '',
-    category: 'clasica'
+    name: '', price: '', description: '', image: '', category: 'clasica'
   });
 
   const [colaboradorForm, setColaboradorForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'cocina'
+    name: '', email: '', password: '', role: 'cocina'
   });
-
-  /* ===================== AUTH ===================== */
 
   useEffect(() => {
     if (!isLoggedIn || user?.role !== 'admin') {
@@ -76,92 +44,63 @@ export default function AdminPage() {
     }
   }, [activeTab, isLoggedIn, user]);
 
-  /* ===================== FETCH ===================== */
-
-  const fetchPizzas = async (): Promise<void> => {
+  const fetchPizzas = async () => {
     try {
       const res = await fetch('/api/pizzas', { cache: 'no-store' });
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setPizzas(data);
-      } else {
-        setPizzas([]);
-      }
+      if (Array.isArray(data)) setPizzas(data);
     } catch (error) {
       console.error("Error cargando pizzas:", error);
-      setPizzas([]);
     }
   };
 
-  const fetchUsuarios = async (): Promise<void> => {
+  const fetchUsuarios = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/users', { cache: 'no-store' });
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setUsuarios(data);
-      } else {
-        setUsuarios([]);
-      }
+      if (Array.isArray(data)) setUsuarios(data);
     } catch (error) {
       console.error("Error cargando usuarios:", error);
-      setUsuarios([]);
     } finally {
       setLoading(false);
     }
   };
 
-  /* ===================== IMAGE ===================== */
-
-  const handleImageUpload = (
-    e: ChangeEvent<HTMLInputElement>, 
-    isEdit: boolean = false
-  ): void => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      if (isEdit && editingPizza) {
-        setEditingPizza({ ...editingPizza, image: base64String });
-      } else {
-        setPizzaForm(prev => ({ ...prev, image: base64String }));
-      }
-    };
-    reader.readAsDataURL(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        if (isEdit) {
+          setEditingPizza((prev: any) => ({ ...prev, image: base64String }));
+        } else {
+          setPizzaForm((prev) => ({ ...prev, image: base64String }));
+        }
+      };
+      reader.readAsDataURL(file); 
+    }
   };
 
-  /* ===================== PIZZAS ===================== */
-
-  const handleAddPizza = async (e: FormEvent): Promise<void> => {
+  const handleAddPizza = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!pizzaForm.image) {
       alert("Por favor, sube una imagen para la pizza.");
       return;
     }
-
+    
     setIsSaving(true);
     try {
       const res = await fetch('/api/pizzas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...pizzaForm, 
-          price: Number(pizzaForm.price) 
-        }),
+        body: JSON.stringify({ ...pizzaForm, price: Number(pizzaForm.price) }),
       });
 
       if (res.ok) {
-        setPizzaForm({
-          name: '',
-          price: '',
-          description: '',
-          image: '',
-          category: 'clasica'
-        });
-        await fetchPizzas();
+        setPizzaForm({ name: '', price: '', description: '', image: '', category: 'clasica' });
+        await fetchPizzas(); 
         alert("¡Pizza añadida correctamente al menú!");
       }
     } catch (error) {
@@ -171,28 +110,29 @@ export default function AdminPage() {
     }
   };
 
-  const openEditModal = (pizza: Pizza): void => {
+  const openEditModal = (pizza: any) => {
     setEditingPizza({ ...pizza });
     setIsEditModalOpen(true);
   };
 
-  const handleUpdatePizza = async (e: FormEvent): Promise<void> => {
+  const handleUpdatePizza = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingPizza) return;
-
     setIsSaving(true);
     try {
       const res = await fetch(`/api/pizzas/${editingPizza._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          ...editingPizza,
-          price: Number(editingPizza.price)
+          name: editingPizza.name,
+          price: Number(editingPizza.price),
+          description: editingPizza.description,
+          image: editingPizza.image, 
+          category: editingPizza.category
         }),
       });
 
       if (res.ok) {
-        await fetchPizzas();
+        await fetchPizzas(); 
         setIsEditModalOpen(false);
         setEditingPizza(null);
         alert("¡Cambios guardados con éxito!");
@@ -206,9 +146,8 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeletePizza = async (id: string): Promise<void> => {
-    if (!confirm("¿Seguro que quieres eliminar esta pizza del menú de Tabasco?")) return;
-
+  const handleDeletePizza = async (id: string) => {
+    if (!confirm("¿Seguro que quieres eliminar esta pizza del menú?")) return;
     try {
       const res = await fetch(`/api/pizzas/${id}`, { method: 'DELETE' });
       if (res.ok) await fetchPizzas();
@@ -217,20 +156,16 @@ export default function AdminPage() {
     }
   };
 
-  /* ===================== ROLES ===================== */
-
-  const handleRoleChange = async (userId: string, newRole: string): Promise<void> => {
+  const handleRoleChange = async (userId: string, newRole: string) => {
     if (!confirm(`¿Cambiar el rol de este usuario a ${newRole.toUpperCase()}?`)) return;
-
     try {
       const res = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       });
-
       if (res.ok) {
-        await fetchUsuarios();
+        fetchUsuarios(); 
       } else {
         alert("Error al actualizar el rol.");
       }
@@ -239,60 +174,31 @@ export default function AdminPage() {
     }
   };
 
-  /* ===================== COLABORADORES ===================== */
-
-  const handleAddColaborador = async (e: FormEvent): Promise<void> => {
+  // --- AQUÍ ESTÁ LA FUNCIÓN PARA AÑADIR COLABORADORES ---
+  const handleAddColaborador = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!colaboradorForm.name || !colaboradorForm.email || !colaboradorForm.password) {
-      alert("Todos los campos son obligatorios.");
-      return;
-    }
-
     setIsSaving(true);
-
     try {
-      const res = await fetch('/api/users', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(colaboradorForm),
       });
 
       if (res.ok) {
-        setColaboradorForm({
-          name: '',
-          email: '',
-          password: '',
-          role: 'cocina'
-        });
-
-        await fetchUsuarios();
-        alert("Colaborador registrado correctamente.");
+        setColaboradorForm({ name: '', email: '', password: '', role: 'cocina' });
+        fetchUsuarios();
+        alert("Personal registrado con éxito.");
       } else {
-        alert("Error al registrar colaborador.");
+        const errorData = await res.json();
+        alert(errorData.error || "Error al registrar.");
       }
     } catch (error) {
-      console.error("Error creando colaborador:", error);
+      console.error("Error registrando personal:", error);
     } finally {
       setIsSaving(false);
     }
   };
-  /* ===================== FILTROS ===================== */
-
-  const clientes = usuarios.filter(u => u.role === 'cliente');
-  const colaboradores = usuarios.filter(u => u.role !== 'cliente');
-
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin': return <Shield size={16} />;
-      case 'cocina': return <ChefHat size={16} />;
-      case 'cajero': return <CreditCard size={16} />;
-      case 'repartidor': return <Bike size={16} />;
-      default: return <User size={16} />;
-    }
-  };
-
-  /* ===================== RENDER ===================== */
 
   if (!isLoggedIn || user?.role !== 'admin') {
     return (
@@ -301,6 +207,19 @@ export default function AdminPage() {
       </div>
     );
   }
+
+  const clientes = usuarios.filter(u => u.role === 'cliente');
+  const colaboradores = usuarios.filter(u => u.role !== 'cliente');
+
+  const getRoleIcon = (role: string) => {
+    switch(role) {
+      case 'admin': return <Shield size={16} className="text-purple-600" />;
+      case 'cocina': return <ChefHat size={16} className="text-orange-600" />;
+      case 'cajero': return <CreditCard size={16} className="text-blue-600" />;
+      case 'repartidor': return <Bike size={16} className="text-green-600" />;
+      default: return <User size={16} className="text-gray-500" />;
+    }
+  };
 
   return (
     <main className="max-w-6xl mx-auto p-6 lg:p-12">
@@ -326,7 +245,7 @@ export default function AdminPage() {
                 <PlusCircle className="text-red-600" /> Nueva Pizza
               </h2>
               
-              <input type="text" placeholder="Nombre de la Pizza" required className="w-full p-4 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.name ?? ''} onChange={(e) => setPizzaForm({...pizzaForm, name: e.target.value})} />
+              <input type="text" placeholder="Nombre de la Pizza" required className="w-full p-4 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.name || ""} onChange={(e) => setPizzaForm({...pizzaForm, name: e.target.value})} />
               
               <div className="relative border-2 border-dashed border-gray-300 rounded-2xl p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer overflow-hidden">
                 {pizzaForm.image ? (
@@ -334,20 +253,20 @@ export default function AdminPage() {
                 ) : (
                   <Upload className="text-gray-400 mb-2 group-hover:text-red-500 transition-colors" size={40} />
                 )}
-                <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e)} className="absolute inset-0 opacity-0 cursor-pointer" title="Subir imagen" />
+                <input key={pizzaForm.image ? 'has-img' : 'no-img'} type="file" accept="image/*" onChange={(e) => handleImageUpload(e)} className="absolute inset-0 opacity-0 cursor-pointer" title="Subir imagen" />
                 <span className="text-xs font-black text-gray-500 uppercase tracking-widest bg-white/80 px-3 py-1 rounded-full backdrop-blur-sm">
                   {pizzaForm.image ? 'Cambiar Imagen' : 'Sube una Foto'}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <input type="number" placeholder="Precio ($)" required className="w-full p-4 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.price ?? ''} onChange={(e) => setPizzaForm({...pizzaForm, price: e.target.value})} />
-                <select className="w-full p-4 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.category ?? 'clasica'} onChange={(e) => setPizzaForm({...pizzaForm, category: e.target.value})}>
+                <input type="number" placeholder="Precio ($)" required className="w-full p-4 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.price || ""} onChange={(e) => setPizzaForm({...pizzaForm, price: e.target.value})} />
+                <select className="w-full p-4 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.category || "clasica"} onChange={(e) => setPizzaForm({...pizzaForm, category: e.target.value})}>
                   <option value="clasica">Clásica</option>
                   <option value="especial">Especial</option>
                 </select>
               </div>
-              <textarea placeholder="Ingredientes y descripción..." required rows={3} className="w-full p-4 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.description ?? ''} onChange={(e) => setPizzaForm({...pizzaForm, description: e.target.value})} />
+              <textarea placeholder="Ingredientes y descripción..." required rows={3} className="w-full p-4 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-red-500" value={pizzaForm.description || ""} onChange={(e) => setPizzaForm({...pizzaForm, description: e.target.value})} />
               
               <button disabled={isSaving} className="w-full bg-red-600 text-white font-black py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors disabled:bg-gray-400">
                 {isSaving ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
@@ -406,7 +325,7 @@ export default function AdminPage() {
                   <td className="p-5 text-gray-500 text-sm font-medium">{new Date(u.createdAt).toLocaleDateString('es-MX')}</td>
                   <td className="p-5">
                     <select 
-                      value={u.role ?? 'cliente'}
+                      value={u.role || "cliente"}
                       onChange={(e) => handleRoleChange(u._id, e.target.value)}
                       className="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-red-500 cursor-pointer"
                     >
@@ -431,22 +350,22 @@ export default function AdminPage() {
               
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nombre Completo</label>
-                <input type="text" required className="w-full p-3 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.name ?? ''} onChange={(e) => setColaboradorForm({...colaboradorForm, name: e.target.value})} />
+                <input type="text" required className="w-full p-3 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.name || ""} onChange={(e) => setColaboradorForm({...colaboradorForm, name: e.target.value})} />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Correo Electrónico</label>
-                <input type="email" required className="w-full p-3 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.email ?? ''} onChange={(e) => setColaboradorForm({...colaboradorForm, email: e.target.value})} />
+                <input type="email" required className="w-full p-3 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.email || ""} onChange={(e) => setColaboradorForm({...colaboradorForm, email: e.target.value})} />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Contraseña Inicial</label>
-                <input type="password" required className="w-full p-3 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.password ?? ''} onChange={(e) => setColaboradorForm({...colaboradorForm, password: e.target.value})} />
+                <input type="password" required className="w-full p-3 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.password || ""} onChange={(e) => setColaboradorForm({...colaboradorForm, password: e.target.value})} />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Asignar Puesto</label>
-                <select className="w-full p-3 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.role ?? 'cocina'} onChange={(e) => setColaboradorForm({...colaboradorForm, role: e.target.value})}>
+                <select className="w-full p-3 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-blue-500" value={colaboradorForm.role || "cocina"} onChange={(e) => setColaboradorForm({...colaboradorForm, role: e.target.value})}>
                   <option value="cocina">Cocina (Chef)</option>
                   <option value="cajero">Cajero (Mostrador)</option>
                   <option value="repartidor">Repartidor</option>
@@ -489,7 +408,7 @@ export default function AdminPage() {
                       <td className="p-5 text-gray-600 font-medium text-sm">{u.email}</td>
                       <td className="p-5">
                         <select 
-                          value={u.role ?? 'cliente'}
+                          value={u.role || "cliente"}
                           onChange={(e) => handleRoleChange(u._id, e.target.value)}
                           disabled={u.role === 'admin'} 
                           className={`border text-xs font-bold rounded-lg px-3 py-2 outline-none cursor-pointer ${
@@ -516,26 +435,26 @@ export default function AdminPage() {
 
       {isEditModalOpen && editingPizza && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 relative border-t-8 border-blue-600">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 relative animate-in zoom-in-95 duration-200 border-t-8 border-blue-600">
             <button onClick={() => setIsEditModalOpen(false)} className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full"><X size={24} className="text-gray-400" /></button>
             <h2 className="text-3xl font-black mb-8 italic">Editar Producto</h2>
             <form onSubmit={handleUpdatePizza} className="space-y-5">
               
-              <input type="text" required className="w-full p-4 rounded-2xl border bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.name ?? ''} onChange={(e) => setEditingPizza({...editingPizza, name: e.target.value})} />
+              <input type="text" required className="w-full p-4 rounded-2xl border bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.name || ""} onChange={(e) => setEditingPizza({...editingPizza, name: e.target.value})} />
               
               <div className="relative border-2 border-dashed border-blue-200 rounded-2xl p-4 flex flex-col items-center justify-center bg-blue-50/30 hover:bg-blue-50 cursor-pointer overflow-hidden">
                 <img src={editingPizza.image} className="h-32 w-full object-cover rounded-xl mb-3 shadow-sm" />
-                <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                <input key={editingPizza.image ? 'edit-img' : 'edit-no-img'} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} className="absolute inset-0 opacity-0 cursor-pointer" title="Cambiar imagen" />
                 <div className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-full font-bold text-xs uppercase"><Upload size={16} /> Cambiar Foto</div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <input type="number" required className="w-full p-4 rounded-2xl border bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.price ?? ''} onChange={(e) => setEditingPizza({...editingPizza, price: e.target.value})} />
-                <select className="w-full p-4 rounded-2xl border bg-gray-50 font-bold focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.category ?? 'clasica'} onChange={(e) => setEditingPizza({...editingPizza, category: e.target.value})}>
+                <input type="number" required className="w-full p-4 rounded-2xl border bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.price || ""} onChange={(e) => setEditingPizza({...editingPizza, price: e.target.value})} />
+                <select className="w-full p-4 rounded-2xl border bg-gray-50 font-bold focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.category || "clasica"} onChange={(e) => setEditingPizza({...editingPizza, category: e.target.value})}>
                   <option value="clasica">Clásica</option>
                   <option value="especial">Especial</option>
                 </select>
               </div>
-              <textarea rows={2} required className="w-full p-4 rounded-2xl border bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.description ?? ''} onChange={(e) => setEditingPizza({...editingPizza, description: e.target.value})} />
+              <textarea rows={2} required className="w-full p-4 rounded-2xl border bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" value={editingPizza.description || ""} onChange={(e) => setEditingPizza({...editingPizza, description: e.target.value})} />
               <button type="submit" disabled={isSaving} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
                 {isSaving ? <Loader2 className="animate-spin" /> : 'Guardar Cambios'}
               </button>
@@ -546,4 +465,3 @@ export default function AdminPage() {
     </main>
   );
 }
-
