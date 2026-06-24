@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
-import { 
-  Menu, X, Pizza, ShoppingBag, 
-  User, LogOut, Settings, ChefHat, Bike, Store
+import {
+  Menu, X, Pizza, ShoppingBag,
+  User, LogOut, Settings, ChefHat, Bike, Store, ClipboardList
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -36,11 +36,14 @@ export default function Navbar() {
 
   const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
+  const STAFF_ROLES = ['admin', 'cajero', 'cocina', 'repartidor'];
+
   const navLinks = [
     { name: 'Menú', href: '/menu', icon: Pizza, show: true },
+    { name: 'Mis Pedidos', href: '/historial', icon: ClipboardList, show: isMounted && isLoggedIn && !STAFF_ROLES.includes(user?.role ?? '') },
     { name: 'Admin', href: '/admin', icon: Settings, show: user?.role === 'admin' },
-    { name: 'Cocina', href: '/cocina', icon: ChefHat, show: ['admin', 'cajero', 'cocina'].includes(user?.role) },
-    { name: 'Repartos', href: '/repartidor', icon: Bike, show: ['admin', 'repartidor'].includes(user?.role) },
+    { name: 'Cocina', href: '/cocina', icon: ChefHat, show: STAFF_ROLES.slice(0, 3).includes(user?.role ?? '') },
+    { name: 'Repartos', href: '/repartidor', icon: Bike, show: ['admin', 'repartidor'].includes(user?.role ?? '') },
   ].filter(link => link.show);
 
   return (

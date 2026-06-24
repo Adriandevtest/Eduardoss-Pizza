@@ -11,9 +11,10 @@ export interface CartItem {
 
 interface CartState {
   cart: CartItem[];
-  addItem: (product: any) => void;      // Aumentar o agregar
-  removeItem: (id: string) => void;     // Eliminar (Trash)
-  updateQuantity: (id: string, action: 'plus' | 'minus') => void; // +/-
+  addItem: (product: any) => void;
+  addItems: (items: CartItem[]) => void; // Para "Pide de nuevo"
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, action: 'plus' | 'minus') => void;
   clearCart: () => void;
 }
 
@@ -30,6 +31,21 @@ export const useCartStore = create<CartState>((set) => ({
       };
     }
     return { cart: [...state.cart, { ...product, quantity: 1 }] };
+  }),
+
+  addItems: (items) => set((state) => {
+    let newCart = [...state.cart];
+    for (const item of items) {
+      const existing = newCart.find((i) => i._id === item._id);
+      if (existing) {
+        newCart = newCart.map((i) =>
+          i._id === item._id ? { ...i, quantity: i.quantity + item.quantity } : i
+        );
+      } else {
+        newCart.push(item);
+      }
+    }
+    return { cart: newCart };
   }),
 
   // Eliminar producto completamente (Icono de Basura)
