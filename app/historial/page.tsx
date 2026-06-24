@@ -50,16 +50,22 @@ export default function HistorialPage() {
       const menu: any[] = res.ok ? await res.json() : [];
 
       const cartItems = order.items.map((item: any) => {
-        const match = menu.find((p: any) =>
-          p.name.toLowerCase() === item.name.toLowerCase()
-        );
+        const match    = menu.find((p: any) => p.name.toLowerCase() === item.name.toLowerCase());
+        const sizeId   = item.size || 'mediana';
+        const topIds   = item.toppings ?? [];
         return {
-          _id:      match?._id  ?? `reorder-${item.name}`,
-          name:     item.name,
-          price:    item.price,
-          quantity: item.quantity,
-          image:    match?.image ?? '',
-          category: match?.category ?? '',
+          _id:          `${match?._id ?? 'reorder'}-${sizeId}-${[...topIds].sort().join(',')}`,
+          pizzaId:      match?._id ?? '',
+          name:         item.name,
+          price:        item.price,
+          basePrice:    match?.price ?? item.price,
+          quantity:     item.quantity,
+          image:        match?.image ?? '',
+          category:     match?.category ?? '',
+          size:         sizeId,
+          sizeLabel:    item.sizeLabel || 'Mediana (12")',
+          toppings:     topIds,
+          toppingLabels: item.toppingLabels ?? [],
         };
       });
 
@@ -135,11 +141,19 @@ export default function HistorialPage() {
                 {/* Items */}
                 <div className="px-6 py-4 space-y-1.5">
                   {order.items.map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between text-sm">
+                    <div key={i} className="flex justify-between text-sm gap-2">
                       <span className="text-gray-700">
                         <span className="font-black text-gray-900">{item.quantity}×</span> {item.name}
+                        {item.sizeLabel && (
+                          <span className="text-[10px] text-gray-400 ml-1 font-medium">· {item.sizeLabel}</span>
+                        )}
+                        {item.toppingLabels?.length > 0 && (
+                          <span className="block text-[10px] text-red-400 font-bold mt-0.5 pl-4">
+                            + {item.toppingLabels.join(', ')}
+                          </span>
+                        )}
                       </span>
-                      <span className="font-bold text-gray-500">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-bold text-gray-500 shrink-0">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>

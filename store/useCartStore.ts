@@ -7,6 +7,13 @@ export interface CartItem {
   quantity: number;
   image?: string;
   category?: string;
+  // Personalización de pizza
+  pizzaId?: string;
+  basePrice?: number;
+  size?: string;
+  sizeLabel?: string;
+  toppings?: string[];
+  toppingLabels?: string[];
 }
 
 interface CartState {

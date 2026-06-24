@@ -257,7 +257,13 @@ export default function CarritoPage() {
             {cart.map(item => (
               <tr key={item._id}>
                 <td className="py-1 font-bold align-top">{item.quantity}x</td>
-                <td className="py-1 align-top pr-2">{item.name}</td>
+                <td className="py-1 align-top pr-2">
+                  {item.name}
+                  {item.sizeLabel && <span className="block text-[7px] opacity-60">{item.sizeLabel}</span>}
+                  {(item.toppingLabels?.length ?? 0) > 0 && (
+                    <span className="block text-[7px] opacity-60">+ {item.toppingLabels!.join(', ')}</span>
+                  )}
+                </td>
                 <td className="py-1 text-right align-top">${(item.price * item.quantity).toFixed(2)}</td>
               </tr>
             ))}
@@ -340,7 +346,13 @@ export default function CarritoPage() {
                     <img src={item.image} className="w-16 h-16 object-cover rounded-xl bg-gray-50" alt={item.name} />
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-800">{item.name}</h3>
-                      <p className="text-sm text-gray-400">Cant: {item.quantity}</p>
+                      {item.sizeLabel && (
+                        <p className="text-xs font-bold text-gray-500">{item.sizeLabel}</p>
+                      )}
+                      {(item.toppingLabels?.length ?? 0) > 0 && (
+                        <p className="text-[10px] text-red-500 font-bold">+ {item.toppingLabels!.join(', ')}</p>
+                      )}
+                      <p className="text-sm text-gray-400 mt-0.5">Cant: {item.quantity}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-black text-red-600">${(item.price * item.quantity).toFixed(2)}</p>

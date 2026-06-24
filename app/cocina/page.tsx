@@ -142,13 +142,21 @@ export default function CocinaPage() {
               <div className="p-6 flex-1">
                 <ul className="space-y-4">
                   {order.items.map((item: any, index: number) => (
-                    <li key={index} className="flex items-center gap-3 border-b border-gray-50 pb-4 last:border-0 last:pb-0">
-                      <span className="bg-red-100 text-red-700 w-8 h-8 rounded-xl flex items-center justify-center font-black text-lg shrink-0">
+                    <li key={index} className="flex items-start gap-3 border-b border-gray-50 pb-4 last:border-0 last:pb-0">
+                      <span className="bg-red-100 text-red-700 w-8 h-8 rounded-xl flex items-center justify-center font-black text-lg shrink-0 mt-0.5">
                         {item.quantity}
                       </span>
-                      <span className="font-bold text-gray-700 text-lg leading-tight">
-                        {item.name}
-                      </span>
+                      <div>
+                        <p className="font-bold text-gray-700 text-lg leading-tight">{item.name}</p>
+                        {item.sizeLabel && (
+                          <p className="text-xs text-gray-500 font-medium">{item.sizeLabel}</p>
+                        )}
+                        {item.toppingLabels?.length > 0 && (
+                          <p className="text-xs text-red-600 font-bold mt-0.5">
+                            + {item.toppingLabels.join(', ')}
+                          </p>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

@@ -10,6 +10,10 @@ const OrderSchema = new Schema({
       name: String,
       quantity: Number,
       price: Number,
+      size: { type: String, default: '' },
+      sizeLabel: { type: String, default: '' },
+      toppings: [String],
+      toppingLabels: [String],
     }
   ],
   total: { type: Number, required: true },

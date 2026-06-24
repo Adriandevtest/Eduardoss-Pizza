@@ -61,6 +61,7 @@ export default function TrackerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [estimate, setEstimate] = useState<{ min: number; max: number } | null>(null);
 
   const fetchOrder = useCallback(async () => {
     if (!orderId) return;
@@ -82,6 +83,13 @@ export default function TrackerPage() {
     const interval = setInterval(fetchOrder, 5000);
     return () => clearInterval(interval);
   }, [fetchOrder]);
+
+  useEffect(() => {
+    fetch('/api/orders/estimate')
+      .then(r => r.json())
+      .then(d => setEstimate(d))
+      .catch(() => {});
+  }, []);
 
   if (!orderId) {
     return (
@@ -134,20 +142,50 @@ export default function TrackerPage() {
         )}
       </div>
 
-      {/* Tiempo transcurrido */}
+      {/* Tiempo */}
       {!isEntregado && (
-        <div className="bg-red-50 border border-red-100 p-5 rounded-3xl flex items-center gap-4 mb-8 shadow-sm">
-          <div className="bg-red-600 p-3 rounded-2xl text-white shrink-0">
-            <Clock size={26} />
+        <div className="grid grid-cols-2 gap-3 mb-8">
+          {/* Tiempo transcurrido */}
+          <div className="bg-red-50 border border-red-100 p-4 rounded-3xl flex items-center gap-3 shadow-sm">
+            <div className="bg-red-600 p-2.5 rounded-2xl text-white shrink-0">
+              <Clock size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] text-red-600 font-black uppercase tracking-wider">Transcurrido</p>
+              <p className="text-2xl font-black text-red-900 leading-none mt-0.5">{minutosTrans} min</p>
+              <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-1">
+                <RefreshCw size={10} className="animate-spin" style={{ animationDuration: '3s' }} />
+                {lastUpdate ? new Date(lastUpdate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-red-600 font-black uppercase tracking-wider">Tiempo transcurrido</p>
-            <p className="text-2xl font-black text-red-900">{minutosTrans} min</p>
-          </div>
-          <div className="ml-auto flex items-center gap-1 text-xs text-gray-400 font-medium">
-            <RefreshCw size={12} className="animate-spin" style={{ animationDuration: '3s' }} />
-            {lastUpdate ? `${new Date(lastUpdate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
-          </div>
+
+          {/* Tiempo estimado (solo mientras no está en camino) */}
+          {estimate && pasoActual <= 2 && (
+            <div className="bg-orange-50 border border-orange-100 p-4 rounded-3xl flex items-center gap-3 shadow-sm">
+              <div className="bg-orange-500 p-2.5 rounded-2xl text-white shrink-0">
+                <Bike size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] text-orange-600 font-black uppercase tracking-wider">Entrega est.</p>
+                <p className="text-2xl font-black text-orange-900 leading-none mt-0.5">{estimate.min}–{estimate.max}</p>
+                <p className="text-[10px] text-orange-400 mt-1">minutos</p>
+              </div>
+            </div>
+          )}
+
+          {/* En camino: aviso de llegada pronto */}
+          {pasoActual === 3 && (
+            <div className="bg-green-50 border border-green-100 p-4 rounded-3xl flex items-center gap-3 shadow-sm">
+              <div className="bg-green-500 p-2.5 rounded-2xl text-white shrink-0">
+                <Bike size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] text-green-700 font-black uppercase tracking-wider">¡Ya va!</p>
+                <p className="text-sm font-black text-green-900 leading-tight mt-0.5">Tu pizza está en camino</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
