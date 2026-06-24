@@ -107,10 +107,11 @@ export default function RepartidorPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {orders.map((order: any) => {
-            // Limpiamos el teléfono para poder usarlo en los links de WhatsApp/Llamada
             const cleanPhone = order.customerPhone?.replace(/[^0-9]/g, '') || '';
-            // Forzamos la búsqueda en Tabasco para mayor precisión en Maps
-            const mapQuery = encodeURIComponent(`${order.deliveryAddress}, Tabasco, Mexico`);
+            // Navegación con coordenadas GPS exactas si están disponibles, si no busca por texto
+            const navLink = order.deliveryCoords?.lat
+              ? `https://www.google.com/maps/dir/?api=1&destination=${order.deliveryCoords.lat},${order.deliveryCoords.lng}&travelmode=driving`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.deliveryAddress}, Tabasco, Mexico`)}`;
 
             return (
               <div key={order._id} className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden flex flex-col relative">
@@ -194,13 +195,13 @@ export default function RepartidorPage() {
                 <div className="p-4 bg-white border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-3 mt-auto">
                   {/* Botón de Navegación */}
                   {order.deliveryAddress !== 'Mostrador' && (
-                    <a 
-                      href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                    <a
+                      href={navLink}
                       target="_blank" rel="noopener noreferrer"
                       className="bg-blue-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
                     >
                       <Navigation size={20} />
-                      Abrir en Mapa
+                      {order.deliveryCoords?.lat ? 'Navegar (GPS)' : 'Abrir en Mapa'}
                     </a>
                   )}
 

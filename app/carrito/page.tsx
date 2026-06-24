@@ -74,17 +74,23 @@ export default function CarritoPage() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         setMapCoords({ lat: latitude, lng: longitude });
-        
+
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`);
           const data = await res.json();
-          const streetName = data.address?.road || data.address?.suburb || data.display_name.split(',')[0];
-          setTempAddress(`${streetName} (GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
-        } catch (error) {
-          setTempAddress(`Ubicación GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          const addr = data.address || {};
+          const parts = [
+            addr.road,
+            addr.house_number,
+            addr.suburb || addr.neighbourhood || addr.city_district,
+            addr.city || addr.town || addr.village,
+          ].filter(Boolean);
+          setTempAddress(parts.length > 0 ? parts.join(', ') : data.display_name.split(',').slice(0, 2).join(',').trim());
+        } catch {
+          setTempAddress('');
         } finally {
           setIsLocating(false);
-          setShowMapModal(true); // Abrimos el modal del mapa
+          setShowMapModal(true);
         }
       },
       (error) => {
@@ -147,7 +153,8 @@ export default function CarritoPage() {
       status: isStaffCheckout ? 'pagado' : 'pendiente',
       paymentMethod: selectedMethod,
       notes: formData.notes,
-      sucursal: sucursal || 'Sin especificar'
+      sucursal: sucursal || 'Sin especificar',
+      deliveryCoords: mapCoords ?? undefined
     };
 
     try {
@@ -554,39 +561,51 @@ export default function CarritoPage() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print:hidden">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
             <div className="bg-gray-900 p-4 flex justify-between items-center text-white">
-              <h3 className="font-bold flex items-center gap-2"><MapPin size={18} /> Confirma tu ubicación</h3>
+              <h3 className="font-bold flex items-center gap-2"><MapPin size={18} /> Tu ubicación GPS</h3>
               <button onClick={() => setShowMapModal(false)} className="text-gray-400 hover:text-white"><X size={24} /></button>
             </div>
-            
-            {/* Visualizador de Google Maps nativo basado en coordenadas */}
-            <iframe 
-              width="100%" 
-              height="250" 
-              style={{ border: 0 }} 
-              loading="lazy" 
-              allowFullScreen 
-              src={`https://maps.google.com/maps?q=${mapCoords.lat},${mapCoords.lng}&t=m&z=16&output=embed&iwloc=near`}
+
+            {/* Mapa con pin exacto y zoom cercano */}
+            <iframe
+              width="100%"
+              height="220"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              src={`https://maps.google.com/maps?q=${mapCoords.lat},${mapCoords.lng}&t=m&z=17&output=embed&iwloc=near`}
             ></iframe>
 
             <div className="p-6 space-y-4">
+              {/* Dirección detectada automáticamente */}
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-1">Dirección detectada</p>
+                <p className="font-bold text-gray-800 text-sm leading-snug">
+                  {tempAddress || 'No se pudo detectar la calle'}
+                </p>
+              </div>
+
+              {/* Referencias adicionales */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Calle y referencias exactas</label>
-                <textarea 
-                  rows={2} 
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">
+                  Número exterior y referencias (opcional)
+                </label>
+                <textarea
+                  rows={2}
                   className="w-full p-3 rounded-xl border bg-gray-50 outline-none focus:ring-2 focus:ring-red-500 font-medium text-sm"
-                  value={tempAddress}
-                  onChange={(e) => setTempAddress(e.target.value)}
-                  placeholder="Ej: Calle Reforma #123, casa roja..."
+                  placeholder="Ej: #45, casa beige con portón negro..."
+                  value={formData.notes.startsWith('Ref:') ? formData.notes.replace('Ref: ', '') : ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value ? `Ref: ${e.target.value}` : '' }))}
                 />
               </div>
-              <button 
+
+              <button
                 onClick={() => {
-                  setFormData(prev => ({ ...prev, address: tempAddress }));
+                  setFormData(prev => ({ ...prev, address: tempAddress || `GPS: ${mapCoords.lat.toFixed(5)}, ${mapCoords.lng.toFixed(5)}` }));
                   setShowMapModal(false);
                 }}
                 className="w-full bg-red-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 transition-all flex justify-center items-center gap-2"
               >
-                <CheckCircle2 size={20} /> Guardar Dirección
+                <CheckCircle2 size={20} /> Confirmar ubicación
               </button>
             </div>
           </div>

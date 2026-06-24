@@ -17,6 +17,10 @@ const OrderSchema = new Schema({
   paymentMethod: { type: String, default: 'efectivo' },
   notes: { type: String, default: '' },
   sucursal: { type: String, default: '' },
+  deliveryCoords: {
+    lat: { type: Number },
+    lng: { type: Number },
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       paymentMethod: body.paymentMethod,
       notes: body.notes,
       sucursal: body.sucursal,
+      deliveryCoords: body.deliveryCoords,
       createdAt: new Date()
     });
 
