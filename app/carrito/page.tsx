@@ -20,8 +20,9 @@ export default function CarritoPage() {
   const router = useRouter();
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isLocating, setIsLocating] = useState(false); 
-  const [step, setStep] = useState(1); 
+  const [isLocating, setIsLocating] = useState(false);
+  const [step, setStep] = useState(1);
+  const [orderId, setOrderId] = useState('');
 
   // Estado para el método de pago del cajero
   const [staffPaymentMethod, setStaffPaymentMethod] = useState<'efectivo' | 'tarjeta'>('efectivo');
@@ -165,18 +166,20 @@ export default function CarritoPage() {
       });
 
       if (res.ok) {
+        const newOrder = await res.json();
         if (isStaffCheckout) {
-          alert("¡Cobro exitoso! Pedido enviado a cocina. 👨‍🍳🍕"); 
+          alert("¡Cobro exitoso! Pedido enviado a cocina. 👨‍🍳🍕");
           setShowCashModal(false);
           setCashGiven('');
           setTimeout(() => {
             window.print();
             clearCart();
             setStep(1);
-            setFormData({ name: '', phone: '', address: '', notes: '' }); 
+            setFormData({ name: '', phone: '', address: '', notes: '' });
           }, 500);
         } else {
-          setStep(3); 
+          setOrderId(newOrder._id);
+          setStep(3);
           clearCart();
         }
       } else {
@@ -287,18 +290,39 @@ export default function CarritoPage() {
       </div>
 
       {step === 3 && (
-        <div className="flex flex-col items-center justify-center py-20 animate-in zoom-in-95 print:hidden">
+        <div className="flex flex-col items-center justify-center py-16 animate-in zoom-in-95 print:hidden">
           <div className="bg-green-100 p-6 rounded-full text-green-600 mb-6">
             <CheckCircle2 size={64} />
           </div>
-          <h1 className="text-4xl font-black text-gray-900 mb-2 text-center">¡Pedido enviado a cocina! 👨‍🍳</h1>
-          <p className="text-gray-500 text-lg mb-8 text-center max-w-md">
-            Tu pago fue exitoso y los chefs de <strong>Pizzería Eduardo's</strong> ya están preparando tu orden. 
-            El repartidor llegará a: <br/> <span className="font-bold text-gray-800">{formData.address}</span>
+          <h1 className="text-4xl font-black text-gray-900 mb-2 text-center">¡Pedido confirmado! 👨‍🍳</h1>
+          <p className="text-gray-500 text-lg mb-2 text-center max-w-md">
+            Los chefs de <strong>Pizzería Eduardo's</strong> ya están preparando tu orden.
           </p>
-          <div className="flex gap-4">
-            <Link href="/menu" onClick={() => setStep(1)} className="bg-red-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-red-700 transition-all">
-              Pedir Más
+          {formData.address && (
+            <p className="text-gray-400 text-sm mb-6 text-center">
+              📍 {formData.address}
+            </p>
+          )}
+
+          {/* ID del pedido */}
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 mb-8 text-center">
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Número de pedido</p>
+            <p className="font-mono font-black text-xl text-gray-900">#{orderId.slice(-8).toUpperCase()}</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+            <Link
+              href={`/tracker?id=${orderId}`}
+              className="flex-1 bg-red-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-red-700 transition-all text-center shadow-lg shadow-red-200"
+            >
+              Ver mi pedido
+            </Link>
+            <Link
+              href="/menu"
+              onClick={() => setStep(1)}
+              className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-2xl font-bold hover:bg-gray-200 transition-all text-center"
+            >
+              Pedir más
             </Link>
           </div>
         </div>

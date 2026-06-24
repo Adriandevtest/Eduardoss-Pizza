@@ -5,6 +5,21 @@ import { requireRole } from '@/lib/auth';
 
 const STAFF_ROLES = ['admin', 'cajero', 'cocina', 'repartidor'];
 
+// CONSULTA PÚBLICA DE ESTADO (para el tracker del cliente)
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    await dbConnect();
+    const { id } = await context.params;
+
+    const order = await Order.findById(id).select('status items total customerName deliveryAddress sucursal createdAt');
+    if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
+
+    return NextResponse.json(order);
+  } catch {
+    return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
+  }
+}
+
 // ACTUALIZAR ESTADO DEL PEDIDO (PATCH)
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(...STAFF_ROLES);

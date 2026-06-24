@@ -33,7 +33,7 @@ export default function RepartidorPage() {
       if (res.ok) {
         const data = await res.json();
         const listosParaEntrega = data.filter((o: any) =>
-          o.status === 'listo' &&
+          (o.status === 'listo' || o.status === 'en_camino') &&
           (user?.role === 'admin' || o.sucursal === user?.sucursal)
         );
         setOrders(listosParaEntrega);
@@ -55,22 +55,32 @@ export default function RepartidorPage() {
     }
   }, [isLoggedIn, user]);
 
-  // 4. MARCAR COMO ENTREGADO
-  const handleEntregado = async (id: string) => {
-    if (!confirm("¿Confirmas que este pedido ya fue entregado al cliente?")) return;
-    
+  // 4. MARCAR EN CAMINO
+  const handleEnCamino = async (id: string) => {
     try {
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'entregado' }), // Cambiamos el estado a entregado
+        body: JSON.stringify({ status: 'en_camino' }),
       });
+      if (res.ok) fetchDeliveryOrders();
+      else alert("Error al actualizar el estado.");
+    } catch (error) {
+      console.error("Error al marcar en camino:", error);
+    }
+  };
 
-      if (res.ok) {
-        fetchDeliveryOrders();
-      } else {
-        alert("Error al actualizar la entrega.");
-      }
+  // 5. MARCAR COMO ENTREGADO
+  const handleEntregado = async (id: string) => {
+    if (!confirm("¿Confirmas que este pedido ya fue entregado al cliente?")) return;
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'entregado' }),
+      });
+      if (res.ok) fetchDeliveryOrders();
+      else alert("Error al actualizar la entrega.");
     } catch (error) {
       console.error("Error al finalizar entrega:", error);
     }
@@ -205,14 +215,24 @@ export default function RepartidorPage() {
                     </a>
                   )}
 
-                  {/* Botón de Completar */}
-                  <button 
-                    onClick={() => handleEntregado(order._id)}
-                    className={`${order.deliveryAddress === 'Mostrador' ? 'md:col-span-2' : ''} bg-gray-900 text-white py-4 rounded-2xl font-black text-sm hover:bg-black transition-all shadow-lg flex items-center justify-center gap-2`}
-                  >
-                    <CheckCircle2 size={20} />
-                    Completar Entrega
-                  </button>
+                  {/* Botón según estado */}
+                  {order.status === 'listo' ? (
+                    <button
+                      onClick={() => handleEnCamino(order._id)}
+                      className={`${order.deliveryAddress === 'Mostrador' ? 'md:col-span-2' : ''} bg-orange-500 text-white py-4 rounded-2xl font-black text-sm hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 flex items-center justify-center gap-2`}
+                    >
+                      <Bike size={20} />
+                      Salir a Entregar
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleEntregado(order._id)}
+                      className={`${order.deliveryAddress === 'Mostrador' ? 'md:col-span-2' : ''} bg-gray-900 text-white py-4 rounded-2xl font-black text-sm hover:bg-black transition-all shadow-lg flex items-center justify-center gap-2`}
+                    >
+                      <CheckCircle2 size={20} />
+                      Confirmar Entrega
+                    </button>
+                  )}
                 </div>
 
               </div>
