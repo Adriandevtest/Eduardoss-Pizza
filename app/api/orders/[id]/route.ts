@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
-import Order from '@/models/Order'; // Asegúrate de que apunte bien a tu modelo
+import Order from '@/models/Order';
+import { requireRole } from '@/lib/auth';
+
+const STAFF_ROLES = ['admin', 'cajero', 'cocina', 'repartidor'];
 
 // ACTUALIZAR ESTADO DEL PEDIDO (PATCH)
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(...STAFF_ROLES);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await dbConnect();
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
 
     const updatedOrder = await Order.findByIdAndUpdate(
@@ -26,18 +32,21 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-// ELIMINAR PEDIDO (DELETE) - Por si lo necesitas después
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+// ELIMINAR PEDIDO (DELETE)
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole('admin');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await dbConnect();
-    const { id } = await params;
-    
+    const { id } = await context.params;
+
     const deletedOrder = await Order.findByIdAndDelete(id);
-    
+
     if (!deletedOrder) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     }
-    
+
     return NextResponse.json({ message: "Eliminado" });
   } catch (error) {
     return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });

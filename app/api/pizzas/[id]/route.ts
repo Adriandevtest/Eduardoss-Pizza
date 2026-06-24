@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
 import Pizza from '@/models/Pizza';
+import { requireRole } from '@/lib/auth';
 
 // ACTUALIZAR (PUT)
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole('admin');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await dbConnect();
 
@@ -42,6 +46,9 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole('admin');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await dbConnect();
 

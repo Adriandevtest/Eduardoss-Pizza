@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
 import User from '@/models/User';
+import { requireRole } from '@/lib/auth';
 
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole('admin');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await dbConnect();
 

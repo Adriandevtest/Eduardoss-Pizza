@@ -67,19 +67,30 @@ export default function AdminPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        if (isEdit) {
-          setEditingPizza((prev: any) => ({ ...prev, image: base64String }));
-        } else {
-          setPizzaForm((prev) => ({ ...prev, image: base64String }));
-        }
-      };
-      reader.readAsDataURL(file); 
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      if (isEdit) {
+        setEditingPizza((prev: any) => ({ ...prev, image: data.url }));
+      } else {
+        setPizzaForm((prev) => ({ ...prev, image: data.url }));
+      }
+    } catch (error) {
+      console.error('Error subiendo imagen:', error);
+      alert('No se pudo subir la imagen. Intenta de nuevo.');
+    } finally {
+      setIsSaving(false);
     }
   };
 

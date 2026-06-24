@@ -28,7 +28,8 @@ export default function Navbar() {
     setIsOpen(false);
   }, [pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
     logout();
     router.push('/');
   };

@@ -2,9 +2,15 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
 import Order from '@/models/Order';
+import { requireRole } from '@/lib/auth';
+
+const STAFF_ROLES = ['admin', 'cajero', 'cocina', 'repartidor'];
 
 // PARA LA COCINA: Obtener todos los pedidos
 export async function GET() {
+  const auth = await requireRole(...STAFF_ROLES);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     await dbConnect();
     const orders = await Order.find({}).sort({ createdAt: -1 });
@@ -25,12 +31,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "El pedido está vacío" }, { status: 400 });
     }
 
+    const allowedStatuses = ['pendiente', 'pagado'];
     const newOrder = await Order.create({
       customerName: body.customerName,
       customerEmail: body.customerEmail,
+      customerPhone: body.customerPhone,
+      deliveryAddress: body.deliveryAddress,
       items: body.items,
       total: body.total,
-      status: 'pendiente',
+      status: allowedStatuses.includes(body.status) ? body.status : 'pendiente',
+      paymentMethod: body.paymentMethod,
+      notes: body.notes,
       createdAt: new Date()
     });
 
