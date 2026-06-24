@@ -9,6 +9,7 @@ export interface TokenPayload {
   name: string;
   email: string;
   role: string;
+  sucursal: string;
 }
 
 export function signToken(payload: TokenPayload) {

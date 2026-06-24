@@ -30,8 +30,10 @@ export default function CocinaPage() {
       const res = await fetch('/api/orders', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        // Filtramos para ver solo lo que la cocina debe preparar
-        const pendientes = data.filter((o: any) => o.status === 'pendiente' || o.status === 'pagado');
+        const pendientes = data.filter((o: any) =>
+          (o.status === 'pendiente' || o.status === 'pagado') &&
+          (user?.role === 'admin' || o.sucursal === user?.sucursal)
+        );
         setOrders(pendientes);
       }
     } catch (error) {
@@ -117,6 +119,11 @@ export default function CocinaPage() {
                   <span className="bg-gray-900 text-white text-xs font-black px-3 py-1 rounded-full tracking-widest uppercase">
                     #{order._id.slice(-5)}
                   </span>
+                  {order.sucursal && (
+                    <span className="text-[10px] font-black uppercase tracking-widest bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                      {order.sucursal}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-md shadow-sm">
                     <Clock size={14} /> 
                     {new Date(order.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}

@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Credenciales incorrectas" }, { status: 401 });
     }
 
-    const payload = { _id: String(user._id), name: user.name, email: user.email, role: user.role };
+    const payload = { _id: String(user._id), name: user.name, email: user.email, role: user.role, sucursal: user.sucursal ?? '' };
     const token = signToken(payload);
 
     const response = NextResponse.json(payload);

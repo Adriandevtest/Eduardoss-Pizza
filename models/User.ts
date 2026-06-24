@@ -5,7 +5,8 @@ const UserSchema = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true }, // En producción usaremos encriptación
   address: { type: String, default: '' },
-  role: { type: String, default: 'client' } // 'client' o 'admin'
+  role: { type: String, default: 'client' },
+  sucursal: { type: String, default: '' }
 }, { timestamps: true });
 
 const User = models.User || model('User', UserSchema);

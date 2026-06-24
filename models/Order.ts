@@ -16,6 +16,7 @@ const OrderSchema = new Schema({
   status: { type: String, default: 'pendiente' },
   paymentMethod: { type: String, default: 'efectivo' },
   notes: { type: String, default: '' },
+  sucursal: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 

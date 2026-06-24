@@ -2,6 +2,7 @@
 
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSucursalStore } from '@/store/useSucursalStore';
 import { 
   Trash2, Plus, Minus, ShoppingBag, 
   MapPin, Phone, User, CreditCard, 
@@ -15,6 +16,7 @@ import { useRouter } from 'next/navigation';
 export default function CarritoPage() {
   const { cart, removeItem, updateQuantity, clearCart } = useCartStore();
   const { user } = useAuthStore();
+  const { sucursal } = useSucursalStore();
   const router = useRouter();
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -142,9 +144,10 @@ export default function CarritoPage() {
         price: item.price
       })),
       total: total,
-      status: isStaffCheckout ? 'pagado' : 'pendiente', 
+      status: isStaffCheckout ? 'pagado' : 'pendiente',
       paymentMethod: selectedMethod,
-      notes: formData.notes
+      notes: formData.notes,
+      sucursal: sucursal || 'Sin especificar'
     };
 
     try {

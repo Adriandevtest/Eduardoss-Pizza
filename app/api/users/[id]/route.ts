@@ -16,11 +16,11 @@ export async function PATCH(
     const { id } = await context.params;
     const body = await request.json();
 
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { role: body.role },
-      { new: true }
-    );
+    const update: Record<string, string> = {};
+    if (body.role !== undefined) update.role = body.role;
+    if (body.sucursal !== undefined) update.sucursal = body.sucursal;
+
+    const updatedUser = await User.findByIdAndUpdate(id, update, { new: true });
 
     if (!updatedUser) {
       return NextResponse.json(

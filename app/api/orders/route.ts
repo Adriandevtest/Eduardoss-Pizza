@@ -42,6 +42,7 @@ export async function POST(request: Request) {
       status: allowedStatuses.includes(body.status) ? body.status : 'pendiente',
       paymentMethod: body.paymentMethod,
       notes: body.notes,
+      sucursal: body.sucursal,
       createdAt: new Date()
     });
 

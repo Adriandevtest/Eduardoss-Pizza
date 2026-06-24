@@ -32,8 +32,10 @@ export default function RepartidorPage() {
       const res = await fetch('/api/orders', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        // Filtramos solo los pedidos que la cocina marcó como 'listo'
-        const listosParaEntrega = data.filter((o: any) => o.status === 'listo');
+        const listosParaEntrega = data.filter((o: any) =>
+          o.status === 'listo' &&
+          (user?.role === 'admin' || o.sucursal === user?.sucursal)
+        );
         setOrders(listosParaEntrega);
       }
     } catch (error) {
@@ -120,10 +122,15 @@ export default function RepartidorPage() {
                 </div>
 
                 <div className="p-6 pb-4">
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
                     <span className="bg-gray-900 text-white text-xs font-black px-3 py-1 rounded-full tracking-widest uppercase">
                       #{order._id.slice(-5)}
                     </span>
+                    {order.sucursal && (
+                      <span className="text-[10px] font-black uppercase tracking-widest bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        {order.sucursal}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1 text-xs font-bold text-gray-500">
                       <Clock size={14} /> 
                       {new Date(order.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}

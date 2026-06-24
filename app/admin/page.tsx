@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { 
-  PlusCircle, Loader2, Trash2, Edit3, Users, 
-  Pizza as PizzaIcon, Upload, X, CheckCircle2, 
-  UserCog, Shield, ChefHat, Bike, CreditCard, 
-  User, UserPlus 
+import { SUCURSALES } from '@/store/useSucursalStore';
+import {
+  PlusCircle, Loader2, Trash2, Edit3, Users,
+  Pizza as PizzaIcon, Upload, X, CheckCircle2,
+  UserCog, Shield, ChefHat, Bike, CreditCard,
+  User, UserPlus, MapPin
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -176,12 +177,26 @@ export default function AdminPage() {
         body: JSON.stringify({ role: newRole }),
       });
       if (res.ok) {
-        fetchUsuarios(); 
+        fetchUsuarios();
       } else {
         alert("Error al actualizar el rol.");
       }
     } catch (error) {
       console.error("Error cambiando rol:", error);
+    }
+  };
+
+  const handleSucursalChange = async (userId: string, newSucursal: string) => {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sucursal: newSucursal }),
+      });
+      if (res.ok) fetchUsuarios();
+      else alert("Error al actualizar la sucursal.");
+    } catch (error) {
+      console.error("Error cambiando sucursal:", error);
     }
   };
 
@@ -401,11 +416,12 @@ export default function AdminPage() {
                     <th className="p-5 font-bold text-gray-400 uppercase text-[10px] tracking-widest">Colaborador</th>
                     <th className="p-5 font-bold text-gray-400 uppercase text-[10px] tracking-widest">Contacto</th>
                     <th className="p-5 font-bold text-gray-400 uppercase text-[10px] tracking-widest">Puesto Actual</th>
+                    <th className="p-5 font-bold text-gray-400 uppercase text-[10px] tracking-widest">Sucursal</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {loading ? (
-                    <tr><td colSpan={3} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-blue-600" size={32} /></td></tr>
+                    <tr><td colSpan={4} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-blue-600" size={32} /></td></tr>
                   ) : colaboradores.map((u: any) => (
                     <tr key={u._id} className={`hover:bg-blue-50/30 transition-colors ${u.role === 'admin' ? 'bg-purple-50/20' : ''}`}>
                       <td className="p-5 font-bold text-gray-800">
@@ -418,13 +434,13 @@ export default function AdminPage() {
                       </td>
                       <td className="p-5 text-gray-600 font-medium text-sm">{u.email}</td>
                       <td className="p-5">
-                        <select 
+                        <select
                           value={u.role || "cliente"}
                           onChange={(e) => handleRoleChange(u._id, e.target.value)}
-                          disabled={u.role === 'admin'} 
+                          disabled={u.role === 'admin'}
                           className={`border text-xs font-bold rounded-lg px-3 py-2 outline-none cursor-pointer ${
-                            u.role === 'admin' 
-                              ? 'bg-purple-50 text-purple-700 border-purple-200 cursor-not-allowed' 
+                            u.role === 'admin'
+                              ? 'bg-purple-50 text-purple-700 border-purple-200 cursor-not-allowed'
                               : 'bg-white text-gray-700 border-gray-200 focus:border-blue-500'
                           }`}
                         >
@@ -434,6 +450,24 @@ export default function AdminPage() {
                           <option value="repartidor">Repartidor</option>
                           <option value="cliente">Degradar a Cliente</option>
                         </select>
+                      </td>
+                      <td className="p-5">
+                        {u.role === 'admin' ? (
+                          <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                            <MapPin size={12} /> Todas
+                          </span>
+                        ) : (
+                          <select
+                            value={u.sucursal || ''}
+                            onChange={(e) => handleSucursalChange(u._id, e.target.value)}
+                            className="border text-xs font-bold rounded-lg px-3 py-2 outline-none bg-white text-gray-700 border-gray-200 focus:border-green-500 cursor-pointer"
+                          >
+                            <option value="">Sin asignar</option>
+                            {SUCURSALES.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        )}
                       </td>
                     </tr>
                   ))}
